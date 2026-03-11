@@ -1,0 +1,5 @@
+earthengine-api>=1.7.0
+geemap>=0.30.0
+numpy>=1.20.0
+matplotlib>=3.5.0
+google-cloud-storage>=2.0.0
