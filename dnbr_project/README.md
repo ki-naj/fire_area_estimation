@@ -338,30 +338,6 @@ This resamples Sentinel-2 bands to 10 m and produces separate output files with 
 
 ## Outputs
 
-### Output Directory Structure
-
-```
-output/
-├── burn_area_map_01_original_basic.html          # Interactive map - Stage 1
-├── burn_area_map_02_bbox_basic.html              # Interactive map - Stage 2
-├── burn_area_map_03_original_water.html          # Interactive map - Stage 3
-├── burn_area_map_04_bbox_water.html              # Interactive map - Stage 4
-├── analysis_summary.csv                          # Tabular results (all stages)
-├── analysis_summary_10m.csv                      # 10m resolution results (if run)
-├── histograms/
-│   ├── histogram_01_original_basic.png
-│   ├── histogram_02_bbox_basic.png
-│   ├── histogram_03_original_water.png
-│   └── histogram_04_bbox_water.png
-└── exports/
-    ├── aoi_boundary_04.shp(.dbf, .shx, .prj)     # AOI polygons
-    ├── fire_polygons_04.shp(.dbf, .shx, .prj)    # Detected fire boundaries
-    ├── water_mask_polygons_04.shp(...)           # Water bodies
-    ├── dNBR_04.tif                               # dNBR raster (GeoTIFF)
-    ├── burned_area_mask_04.tif                   # Binary burn mask (GeoTIFF)
-    └── post_fire_RGB_04.tif                      # Post-fire RGB composite
-```
-
 ### 1. Interactive HTML Maps
 
 **File:** `burn_area_map_XX_*.html`  
@@ -724,76 +700,6 @@ pip install --upgrade geemap>=0.30.0
 # Verify results_dict was properly populated
 ```
 
----
-
-## Code Examples for Advanced Users
-
-### Custom Threshold Analysis
-
-Modify burn severity thresholds for your specific ecosystem:
-
-```python
-# In your custom script:
-from src.dnbr import *
-from config.config import *
-
-# Custom thresholds for dry forest vs. Mediterranean
-CUSTOM_THRESHOLDS = {
-    "very_low": 0.01,
-    "low": 0.05,
-    "moderate": 0.15,
-    "high": 0.25
-}
-
-# Run classification with custom thresholds
-mask, area = classify_by_threshold(dnbr, 0.05, aoi, SCALE, MAX_PIXELS)
-print(f"Custom threshold area: {area:.2f} ha")
-```
-
-### Accessing Results Programmatically
-
-Post-process results without running full analysis:
-
-```python
-import ee
-ee.Initialize(project=EE_PROJECT_ID)
-
-# Load previously calculated indices
-from config.config import *
-aoi = get_aoi_geometry(AOI_COORDS)
-
-# Recalculate with different thresholds
-mask_low = dnbr.gt(0.03)
-mask_high = dnbr.gt(0.15)
-
-print(f"Area > 0.03: {calculate_area(mask_low, aoi)} ha")
-print(f"Area > 0.15: {calculate_area(mask_high, aoi)} ha")
-```
-
-### Temporal Analysis (Multi-Year)
-
-Compare multiple fire seasons:
-
-```python
-# Modify config.py to loop through years
-years = [2022, 2023, 2024]
-results = {}
-
-for year in years:
-    # Update dates in config
-    PRE_FIRE_DATE_START = f"{year}-07-15"
-    POST_FIRE_DATE_END = f"{year}-08-31"
-    
-    # Run analysis and collect results
-    results[year] = main()
-    
-# Export comparison
-for year, result in results.items():
-    print(f"{year}: {result['total_area']:.2f} ha burned")
-```
-
----
-
 ## Contributing and Development
 
 ### Setting Up Development Environment
@@ -834,50 +740,8 @@ Run test suite (development feature):
 ```bash
 pytest tests/ -v
 ```
-
-### Project Development Roadmap
-
-**Current Version:** 1.0.0 (Proof of Concept)
-
-**Future Versions:**
-- **v1.1:** Real-time processing dashboard (Q2 2026)
-- **v1.2:** Landsat 8/9 integration (Q3 2026)
-- **v2.0:** Machine learning burn severity model (Q4 2026)
-- **v2.1:** Operational monitoring system (Q1 2027)
-
 ---
-
-## FAQ (Frequently Asked Questions)
-
-**Q: Can I use this for operational fire management decisions?**  
-A: Not recommended in current form. This is a proof-of-concept. For operational use, conduct field validation and sensitivity analysis first.
-
-**Q: What's the minimum AOI size for meaningful results?**  
-A: At least 1 km² (100 hectares). Smaller areas may have resolution/statistics issues.
-
-**Q: Can I use Landsat instead of Sentinel-2?**  
-A: Yes, modify `config.py` to use `USGS/LANDSAT/LC09/C02/T1_L2`. Adjust spectral bands and thresholds accordingly.
-
-**Q: How far back can I analyze historical fires?**  
-A: Sentinel-2 data available since June 2015. Landsat back to 2013 (via Earth Engine).
-
-**Q: What countries/regions work best?**  
-A: Mediterranean climate zones, boreal forests, tropical savannas. Tested on southern Europe. Validation needed for other regions.
-
-**Q: Is this cloud-based or desktop-based?**  
-A: Hybrid. Data processing occurs on Google Earth Engine cloud servers; visualization and export on local machine.
-
-**Q: Do I need to pay to use this?**  
-A: Google Earth Engine free tier includes $300 annual cloud credits. Typical analysis costs <$1. No payment required unless exceeding credits.
-
-**Q: Can I parallelize analysis for multiple fires?**  
-A: Not yet built-in. Requires custom scripting to loop through multiple AOIs.
-
-**Q: What's the positional accuracy of burn boundaries?**  
-A: ±1–2 Sentinel-2 pixels (~20–40 m) depending on fire edge sharpness and timing.
-
 ---
-
 ## Disclaimer and Acknowledgments
 
 ### Disclaimer
@@ -930,45 +794,14 @@ If you use this project in research or publication, please cite:
 ```bibtex
 @software{dnbr_burn_analysis_2026,
   title = {Automated Wildfire Burned Area Delineation using Open Data and Google Earth Engine},
-  author = {[Your Name/Affiliation]},
+  author = {[Jakub Janik/Affiliation]},
   year = {2026},
   url = {https://github.com/yourusername/dnbr-burn-analysis},
   version = {1.0.0},
   note = {Proof-of-concept case study methodology}
 }
 ```
-
----
-
-## Contact and Support
-
-**For issues, bug reports, or feature requests:**
-
-1. **Check existing issues** in repository
-2. **Search troubleshooting section** above
-3. **Create detailed issue report** including:
-   - Error message (full traceback)
-   - Python version & OS
-   - Configuration parameters (sanitized)
-   - Steps to reproduce
-
-**For scientific questions about methodology:**
-- Review technical references section
-- Consult NASA FIRMS / USDA Forest Service burn analysis documentation
-- Contact USGS Earth Resources Observation and Science Center
-
----
-
-## Version History
-
-| Version | Date | Status | Notes |
-|---------|------|--------|-------|
-| 1.0.0 | Feb 2026 | Release | Initial proof-of-concept; single case study (Catalonia, Spain) |
-| 0.9.0 | Jan 2026 | Beta | Internal testing; 4-stage analysis framework finalized |
-| 0.8.0 | Dec 2025 | Alpha | Core algorithms and pipeline development |
-
----
-
+```
 ## Quick Links
 
 - 📚 [Google Earth Engine Documentation](https://developers.google.com/earth-engine)
@@ -985,37 +818,7 @@ If you use this project in research or publication, please cite:
 
 ---
 
-**🔬 Research-Grade Implementation**  
-*Demonstrating automated burn area delineation from free and open data sources*
-
-Edit these values to customize your analysis.
-
-## Usage
-
-### Basic Execution
-
-```bash
-cd dnbr_project
-python main.py
 ```
-
-### Output
-
-The script generates:
-1. **4 Interactive HTML Maps** in `output/`
-   - Map for each analysis stage with all layers
-   - Pre-fire RGB, post-fire RGB, dNBR, severity classification, burned areas
-   - Color-coded fire polygons with bounding boxes
-
-2. **CSV Summary** (`output/analysis_summary.csv`)
-   - Analysis name, AOI type, analysis type, water masking status
-   - AOI area, Otsu threshold, burned area, map file, timestamp
-
-3. **Console Output** with metrics for each analysis:
-   - Original AOI area and burned area
-   - Bounding box calculations
-   - Comparison between masked and unmasked analyses
-
 ### Expected Runtime
 
 - 10-15 minutes for complete 4-stage analysis
